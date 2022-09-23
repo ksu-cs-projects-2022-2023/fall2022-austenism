@@ -10,6 +10,8 @@ namespace Austen_sYetUntitledPlatformer
 {
     internal class PlayerController
     {
+        SpriteHandlers.Sprite _sprite = new SpriteHandlers.Sprite("");
+
         public PlayerController()
         {
 
@@ -24,7 +26,7 @@ namespace Austen_sYetUntitledPlatformer
         }
         public void Draw(GameTime gameTime)
         {
-
+            
         }
     }
 }
