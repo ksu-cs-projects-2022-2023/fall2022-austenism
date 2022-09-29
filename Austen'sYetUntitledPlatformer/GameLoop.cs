@@ -9,6 +9,8 @@ namespace Austen_sYetUntitledPlatformer
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
 
+        private PlayerController player;
+
         public GameLoop()
         {
             _graphics = new GraphicsDeviceManager(this);
@@ -18,7 +20,7 @@ namespace Austen_sYetUntitledPlatformer
 
         protected override void Initialize()
         {
-            // TODO: Add your initialization logic here
+            player = new PlayerController(new Vector2(0, 0));
 
             base.Initialize();
         }
@@ -27,7 +29,7 @@ namespace Austen_sYetUntitledPlatformer
         {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
 
-            // TODO: use this.Content to load your game content here
+            player.LoadContent(Content);
         }
 
         protected override void Update(GameTime gameTime)
@@ -35,7 +37,7 @@ namespace Austen_sYetUntitledPlatformer
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
 
-            // TODO: Add your update logic here
+            player.Update(gameTime);
 
             base.Update(gameTime);
         }
@@ -44,7 +46,11 @@ namespace Austen_sYetUntitledPlatformer
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
-            // TODO: Add your drawing code here
+            _spriteBatch.Begin();
+
+            player.Draw(gameTime, _spriteBatch);
+
+            _spriteBatch.End();
 
             base.Draw(gameTime);
         }
