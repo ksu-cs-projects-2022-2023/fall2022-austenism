@@ -26,8 +26,14 @@ namespace Austen_sYetUntitledPlatformer
         private short animationFrame = 0;
 
         private bool colliding = false;
+        private bool collidingLeft = false;
+        private bool collidingRight = false;
         private List<BoundingRectangle> collides = new List<BoundingRectangle>();
         private Vector2 previousPosition;
+
+        private KeyboardState previousState;
+        private KeyboardState currentState;
+        private bool grounded = false;
 
 
 
@@ -37,14 +43,17 @@ namespace Austen_sYetUntitledPlatformer
             private set;
         } = (float)0.4;
 
+        //PHYSICS PROPERTIES OF MAN
         public Vector2 Position;
         public BoundingRectangle PlayerCollisionBox;
         public Vector2 Velocity;
         public Vector2 Acceleration;
 
-        const float maxVerticalVelocity = 1000;
-        const float maxHorizontalVelocity = 1000;
+        const float maxVerticalVelocity = 800;
+        const float maxHorizontalVelocity = 400;
         const float accelerationDueToGravity = 1000;
+        const float frictionFactor = 16;
+        const float movementSpeed = 8;
 
         public PlayerController(Vector2 position)
         {
@@ -55,6 +64,7 @@ namespace Austen_sYetUntitledPlatformer
             Velocity = Vector2.Zero;
             Acceleration = Vector2.Zero;
             //origin = new Vector2(width / 2, height);
+            currentState = Keyboard.GetState();
         }
         public void LoadContent(ContentManager Content)
         {
@@ -64,51 +74,17 @@ namespace Austen_sYetUntitledPlatformer
         {
             float t = (float)gameTime.ElapsedGameTime.TotalSeconds;
 
-            //lets take input next
-            KeyboardState keyboard = Keyboard.GetState();
-
-            if (keyboard.IsKeyDown(Keys.D))
-            {//go right
-                if (Velocity.X < maxHorizontalVelocity) Velocity += new Vector2(10, 0);
-            }
-            if (keyboard.IsKeyDown(Keys.A))
-            {//go left
-                if (Velocity.X > -maxHorizontalVelocity) Velocity += new Vector2(-10, 0);
-            }
-            if (keyboard.IsKeyDown(Keys.W))
-            { //go up
-                if (Velocity.Y > -maxVerticalVelocity) Velocity += new Vector2(0, -10);
-            }
-            if (keyboard.IsKeyDown(Keys.S))
-            {//go down
-                if (Velocity.Y < maxVerticalVelocity) Velocity += new Vector2(0, 10);
-            }
-
-            if (!keyboard.IsKeyDown(Keys.D) && !keyboard.IsKeyDown(Keys.A) && Velocity.X != 0)
-            {//slowdown if not pressing either direction
-                if (Velocity.X < 0)
-                    Velocity.X += 10;
-                if (Velocity.X > 0)
-                    Velocity.X -= 10;
-            }
-            if (!keyboard.IsKeyDown(Keys.W) && !keyboard.IsKeyDown(Keys.S) && Velocity.Y != 0)
-            {//slowdown if not pressing either direction
-                if (Velocity.Y < 0)
-                    Velocity.Y += 10;
-                if (Velocity.Y > 0)
-                    Velocity.Y -= 10;
-            }
-
             //how about physics heh
-            //if (Velocity.Y < maxVerticalVelocity) Acceleration.Y = accelerationDueToGravity;
+            if (Velocity.Y < maxVerticalVelocity) Acceleration.Y = accelerationDueToGravity;
 
             Velocity += Acceleration * t;
-
 
             Position += Velocity * t;
             PlayerCollisionBox.X = Position.X;
             PlayerCollisionBox.Y = Position.Y;
             colliding = false;
+            collidingLeft = false;
+            collidingRight = false;
 
             collides = new List<BoundingRectangle>();
             foreach(BoundingRectangle b in levelCollision)
@@ -138,6 +114,7 @@ namespace Austen_sYetUntitledPlatformer
                 }
             }
             //run through all those tiles now and attempt to resolve it
+            grounded = false;
             foreach (BoundingRectangle b in collides)
             {
                 if(PlayerCollisionBox.CollidesWith(b))
@@ -156,10 +133,12 @@ namespace Austen_sYetUntitledPlatformer
                     }
                     else if (Math.Abs(overlapBottom) < Math.Abs(overlapLeft) &&  //if bottom is the smallest
                              Math.Abs(overlapBottom) < Math.Abs(overlapRight) &&
-                             Math.Abs(overlapBottom) < Math.Abs(overlapTop))
-                    {
+                             Math.Abs(overlapBottom) < Math.Abs(overlapTop)) 
+                    {//if bottom is smallest we gotta make sure we are not grounded to do normal collision with floor
+                        
                         Position.Y += overlapBottom;
                         Velocity.Y = 0;
+                        grounded = true;
                     }
                     else if (Math.Abs(overlapLeft) < Math.Abs(overlapRight) && //if left is smallest
                              Math.Abs(overlapLeft) < Math.Abs(overlapTop) &&
@@ -167,11 +146,13 @@ namespace Austen_sYetUntitledPlatformer
                     {
                         Position.X += overlapLeft;
                         Velocity.X = 0;
+                        collidingLeft = true;
                     }
                     else//if right is the smallest
                     {
                         Position.X += overlapRight;
                         Velocity.X = 0;
+                        collidingRight = true;
                     }
 
 
@@ -183,9 +164,102 @@ namespace Austen_sYetUntitledPlatformer
             }
 
 
+            //lets take input next
+            previousState = currentState;
+            currentState = Keyboard.GetState();
 
-            
 
+            //The big three important ones
+            float speedDelta = 0;
+            if (currentState.IsKeyDown(Keys.D))
+            {//go right
+                if (Velocity.X < maxHorizontalVelocity)
+                {
+                    if(Velocity.X < 0)
+                        speedDelta += movementSpeed * 2;
+                    else
+                        speedDelta += movementSpeed;
+                }
+            }
+            if (currentState.IsKeyDown(Keys.A))
+            {//go left
+                if (Velocity.X > -maxHorizontalVelocity)
+                {
+                    if(Velocity.X > 0)
+                        speedDelta += -movementSpeed * 2;
+                    else
+                        speedDelta += -movementSpeed;
+                }  
+            }
+
+            //if not grounded you dont accelerate as fast
+            if (!grounded)
+            {
+                if (Math.Abs(Velocity.X) < maxHorizontalVelocity / 2)
+                    speedDelta *= 0.8f;
+                else if ((speedDelta * Velocity.X) < 0)
+                    speedDelta *= 0.8f;
+                else
+                    speedDelta = 0f;
+            }
+            Velocity.X += speedDelta;
+
+            if (currentState.IsKeyDown(Keys.Space) && !previousState.IsKeyDown(Keys.Space))
+            {//JUMPU
+                //jump from ground
+                if (grounded)
+                {
+                    float extraHeight = 65 * Math.Abs(Velocity.X) / maxHorizontalVelocity;
+                    if (Velocity.X < (-0.1 * maxHorizontalVelocity) || Math.Abs(Velocity.X) > (0.1 * maxHorizontalVelocity))
+                        extraHeight += 25;
+
+                    Velocity += new Vector2(0, (-470 - extraHeight));
+                }
+                //here be wall jumping mechanics
+                if(currentState.IsKeyDown(Keys.A) && !grounded && collidingLeft)
+                {//wall jump off left wall
+                    Velocity.Y = 0;
+                    Velocity += new Vector2(400, -400);
+                }
+                if (currentState.IsKeyDown(Keys.D) && !grounded && collidingRight)
+                {//wall jump off right wall
+                    Velocity.Y = 0;
+                    Velocity += new Vector2(-400, -400);
+                }
+            }
+            //the other two less important ones
+            if (currentState.IsKeyDown(Keys.W))
+            { //maybe look up?
+
+            }
+            if (currentState.IsKeyDown(Keys.S))
+            {//squat
+
+            }
+
+            //handle slowdown from friction with floor
+            if (!currentState.IsKeyDown(Keys.D) && !currentState.IsKeyDown(Keys.A) && Velocity.X != 0)
+            {//slowdown if not pressing either direction
+                if (grounded)
+                {
+                    if (Velocity.X < 0)
+                        Velocity.X += frictionFactor;
+                    if (Velocity.X > 0)
+                        Velocity.X -= frictionFactor;
+                    if (Velocity.X < frictionFactor && Velocity.X > -frictionFactor)//its somewhere in the middle so just make it zero
+                        Velocity.X = 0;
+                }
+                else //in the air
+                {
+                    if (Velocity.X < 0)
+                        Velocity.X += frictionFactor/4;
+                    if (Velocity.X > 0)
+                        Velocity.X -= frictionFactor/4;
+                    if (Velocity.X < frictionFactor/4 && Velocity.X > -frictionFactor/4)//its somewhere in the middle so just make it zero
+                        Velocity.X = 0;
+                }
+
+            }
         }
         public void Draw(GameTime gameTime, SpriteBatch spriteBatch)
         {
@@ -202,7 +276,7 @@ namespace Austen_sYetUntitledPlatformer
             //    foreach (BoundingRectangle b in collides)
             //        spriteBatch.Draw(texture, new Vector2(b.X, b.Y), source, Color.Red, 0, Vector2.Zero, Scale, SpriteEffects.None, 0);
             //}
-            else
+            //else
                 spriteBatch.Draw(texture, Position, source, Color.White, 0, Vector2.Zero, Scale, SpriteEffects.None, 0);
         }
 
