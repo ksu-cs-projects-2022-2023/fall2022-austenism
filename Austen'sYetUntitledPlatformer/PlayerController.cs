@@ -14,7 +14,7 @@ namespace Austen_sYetUntitledPlatformer
     internal class PlayerController
     {
         Texture2D texture;
-        string texturepath;
+        string texturepath = "PlayerSpriteSheet";
         //these are the size of the texture file not whats on screen
         private int texturewidth = 64;
         private int textureheight = 96;
@@ -22,8 +22,11 @@ namespace Austen_sYetUntitledPlatformer
         private int height;
 
         private Vector2 origin;
-        private double animationTimer;
+        private double animationTimer = 0;
         private short animationFrame = 0;
+        private short animationFramerate = 4;
+        private bool facingRight = true;
+        private bool wallSliding = false;
 
         private bool colliding = false;
         private bool collidingLeft = false;
@@ -41,7 +44,7 @@ namespace Austen_sYetUntitledPlatformer
         {
             get;
             private set;
-        } = (float)0.4;
+        } = (float)0.5;
 
         //PHYSICS PROPERTIES OF MAN
         public Vector2 Position;
@@ -50,7 +53,7 @@ namespace Austen_sYetUntitledPlatformer
         public Vector2 Acceleration;
 
         const float maxVerticalVelocity = 800;
-        const float maxHorizontalVelocity = 400;
+        const float maxHorizontalVelocity = 370;
         const float accelerationDueToGravity = 1000;
         const float frictionFactor = 16;
         const float movementSpeed = 8;
@@ -68,16 +71,35 @@ namespace Austen_sYetUntitledPlatformer
         }
         public void LoadContent(ContentManager Content)
         {
-            texture = Content.Load<Texture2D>("newsprite_filler");
+            texture = Content.Load<Texture2D>(texturepath);
         }
         public void Update(GameTime gameTime, List<Collisions.BoundingRectangle> levelCollision)
         {
+            //before anything lets reset all the sprite checker deals so we know what sprite to use when we get to Draw()
+            wallSliding = false;
+
             float t = (float)gameTime.ElapsedGameTime.TotalSeconds;
 
             //how about physics heh
+            Acceleration.Y = 0;
             if (Velocity.Y < maxVerticalVelocity) Acceleration.Y = accelerationDueToGravity;
 
             Velocity += Acceleration * t;
+            //real quick lets check and make sure that velocity isnt higher than it should be.
+            if(Math.Abs(Velocity.Y) > maxVerticalVelocity)
+            {
+                if (Velocity.Y > 0)
+                    Velocity.Y = maxVerticalVelocity;
+                else if (Velocity.Y < 0)
+                    Velocity.Y = -maxVerticalVelocity;
+            }
+            if(Math.Abs(Velocity.X) > maxHorizontalVelocity)
+            {
+                if (Velocity.X > 0)
+                    Velocity.X = maxHorizontalVelocity;
+                else if (Velocity.X < 0)
+                    Velocity.X = -maxHorizontalVelocity;
+            }
 
             Position += Velocity * t;
             PlayerCollisionBox.X = Position.X;
@@ -96,6 +118,7 @@ namespace Austen_sYetUntitledPlatformer
                 }
             }
             //order them from closest to furthest
+            //trust me ordering them helps a lot
             bool ordered = false;
             while (!ordered && collides.Count > 0)
             {
@@ -145,13 +168,19 @@ namespace Austen_sYetUntitledPlatformer
                              Math.Abs(overlapLeft) < Math.Abs(overlapBottom))
                     {
                         Position.X += overlapLeft;
-                        Velocity.X = 0;
+                        if (Velocity.X < 0)
+                        {
+                            Velocity.X = 0;
+                        }
                         collidingLeft = true;
                     }
                     else//if right is the smallest
                     {
                         Position.X += overlapRight;
-                        Velocity.X = 0;
+                        if(Velocity.X > 0)
+                        {
+                            Velocity.X = 0;
+                        }
                         collidingRight = true;
                     }
 
@@ -173,6 +202,7 @@ namespace Austen_sYetUntitledPlatformer
             float speedDelta = 0;
             if (currentState.IsKeyDown(Keys.D))
             {//go right
+                facingRight = true;
                 if (Velocity.X < maxHorizontalVelocity)
                 {
                     if(Velocity.X < 0)
@@ -180,16 +210,29 @@ namespace Austen_sYetUntitledPlatformer
                     else
                         speedDelta += movementSpeed;
                 }
+                if (collidingRight)
+                {//if holding d while hugging a wall, slide down the wall
+                    if (Velocity.Y > maxVerticalVelocity / 4)
+                        Velocity.Y = maxVerticalVelocity / 4;
+                    wallSliding = true;
+                }
             }
             if (currentState.IsKeyDown(Keys.A))
             {//go left
+                facingRight = false;
                 if (Velocity.X > -maxHorizontalVelocity)
                 {
                     if(Velocity.X > 0)
                         speedDelta += -movementSpeed * 2;
                     else
                         speedDelta += -movementSpeed;
-                }  
+                }
+                if (collidingLeft)
+                {//if holding a while hugging a wall, slide down the wall
+                    if (Velocity.Y > maxVerticalVelocity / 4)
+                        Velocity.Y = maxVerticalVelocity / 4;
+                    wallSliding = true;
+                }
             }
 
             //if not grounded you dont accelerate as fast
@@ -267,8 +310,7 @@ namespace Austen_sYetUntitledPlatformer
             //animationTimer += gameTime.ElapsedGameTime.TotalSeconds;
 
             //lets get the animation source rectangle
-            Rectangle source;
-            source = new Rectangle(animationFrame * texturewidth + 1, 0, texturewidth - 2, textureheight);
+            
 
             //if (colliding) //THIS IS FOR DEBUGGING COLLISION
             //{
@@ -277,7 +319,40 @@ namespace Austen_sYetUntitledPlatformer
             //        spriteBatch.Draw(texture, new Vector2(b.X, b.Y), source, Color.Red, 0, Vector2.Zero, Scale, SpriteEffects.None, 0);
             //}
             //else
-                spriteBatch.Draw(texture, Position, source, Color.White, 0, Vector2.Zero, Scale, SpriteEffects.None, 0);
+            SpriteEffects flipped = SpriteEffects.None;
+            if (!facingRight)
+            {
+                flipped = SpriteEffects.FlipHorizontally;
+            }
+            //for the texture lets default to the base standing, but this can be changed by the state of the player
+            Rectangle source;
+            source = new Rectangle(0, 0, texturewidth, textureheight);
+            
+            //walking/running case
+            if(Velocity.X != 0 && grounded)
+            {//we'll only do the walking/running if grounded so heres that
+                //figure the framerate real quick. it needs to be a linear function of the speed between 4ish and 16
+                animationFramerate = 3;
+                animationFramerate += (short)(12 * (Math.Abs(Velocity.X) / maxHorizontalVelocity));
+
+                animationTimer += gameTime.ElapsedGameTime.TotalSeconds;
+                if(animationTimer > 1 / (double)animationFramerate)
+                {
+                    animationFrame += 1;
+                    if (animationFrame == 4)
+                        animationFrame = 0;
+                    animationTimer = 0;
+                }
+                source = new Rectangle(0 + (animationFrame * texturewidth), 0, texturewidth, textureheight);
+            }
+
+            //wall sliding case
+            if (wallSliding && Velocity.Y > -100)//this only has one frame of animation so we can just do that one frame here
+                source = new Rectangle(0, 97, texturewidth, textureheight);
+
+
+            //finally, draw what the source rectangle has turned out to be
+            spriteBatch.Draw(texture, Position, source, Color.White, 0, Vector2.Zero, Scale, flipped, 0);
         }
 
 
