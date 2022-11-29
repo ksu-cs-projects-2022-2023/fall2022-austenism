@@ -13,6 +13,7 @@ namespace Austen_sYetUntitledPlatformer.Collisions
         public float Y;
         public float Width;
         public float Height;
+        public bool IsEnemy;
         public Vector2 Center => new Vector2(X + (Width/2), Y + (Height/2));
 
         public float Left => X;
@@ -20,20 +21,23 @@ namespace Austen_sYetUntitledPlatformer.Collisions
         public float Top => Y;
         public float Bottom => Y + Height;
 
-        public BoundingRectangle(float x, float y, float height, float width)
+        public BoundingRectangle(float x, float y, float height, float width, bool isenemy)
         {
             X = x;
             Y = y;
             Width = width;
             Height = height;
+            IsEnemy = isenemy;
+
         }
 
-        public BoundingRectangle(Vector2 position, float height, float width)
+        public BoundingRectangle(Vector2 position, float height, float width, bool isenemy)
         {
             X = position.X;
             Y = position.Y;
             Height = height;
             Width = width;
+            IsEnemy = isenemy;
         }
 
         public bool CollidesWith(BoundingRectangle other)

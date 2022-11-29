@@ -21,7 +21,6 @@ namespace Austen_sYetUntitledPlatformer
         private int width;
         private int height;
 
-        private Vector2 origin;
         private double animationTimer = 0;
         private short animationFrame = 0;
         private short animationFramerate = 4;
@@ -63,7 +62,7 @@ namespace Austen_sYetUntitledPlatformer
             Position = position;
             width = (int)(texturewidth * Scale);
             height = (int)(textureheight * Scale);
-            PlayerCollisionBox = new BoundingRectangle(Position.X, Position.Y, height, width);
+            PlayerCollisionBox = new BoundingRectangle(Position.X, Position.Y, height, width, false);
             Velocity = Vector2.Zero;
             Acceleration = Vector2.Zero;
             //origin = new Vector2(width / 2, height);
@@ -73,7 +72,7 @@ namespace Austen_sYetUntitledPlatformer
         {
             texture = Content.Load<Texture2D>(texturepath);
         }
-        public void Update(GameTime gameTime, List<Collisions.BoundingRectangle> levelCollision)
+        public bool Update(GameTime gameTime, List<Collisions.BoundingRectangle> levelCollision, List<Enemy> enemies)
         {
             //before anything lets reset all the sprite checker deals so we know what sprite to use when we get to Draw()
             wallSliding = false;
@@ -100,13 +99,26 @@ namespace Austen_sYetUntitledPlatformer
                 else if (Velocity.X < 0)
                     Velocity.X = -maxHorizontalVelocity;
             }
-
+            float tempor = Position.X;
             Position += Velocity * t;
+            //this one teleports you from bottom to top if you fall off
+            if (Position.Y > 832)
+                Position.Y = -50;
+            //this one disallows you from walking on top of the map when you get teleported
+            if (Position.Y < -33 || Position.Y > 736)
+                Position.X = tempor;
             PlayerCollisionBox.X = Position.X;
             PlayerCollisionBox.Y = Position.Y;
             colliding = false;
             collidingLeft = false;
             collidingRight = false;
+
+            //lets check for collision with enemies real quick
+            foreach(Enemy e in enemies)
+            {
+                if (PlayerCollisionBox.CollidesWith(e.CollisionBox))
+                    return false;
+            }
 
             collides = new List<BoundingRectangle>();
             foreach(BoundingRectangle b in levelCollision)
@@ -303,6 +315,7 @@ namespace Austen_sYetUntitledPlatformer
                 }
 
             }
+            return true;
         }
         public void Draw(GameTime gameTime, SpriteBatch spriteBatch)
         {
@@ -324,6 +337,8 @@ namespace Austen_sYetUntitledPlatformer
             {
                 flipped = SpriteEffects.FlipHorizontally;
             }
+
+
             //for the texture lets default to the base standing, but this can be changed by the state of the player
             Rectangle source;
             source = new Rectangle(0, 0, texturewidth, textureheight);
@@ -333,7 +348,7 @@ namespace Austen_sYetUntitledPlatformer
             {//we'll only do the walking/running if grounded so heres that
                 //figure the framerate real quick. it needs to be a linear function of the speed between 4ish and 16
                 animationFramerate = 3;
-                animationFramerate += (short)(12 * (Math.Abs(Velocity.X) / maxHorizontalVelocity));
+                animationFramerate += (short)(8 * (Math.Abs(Velocity.X) / maxHorizontalVelocity));
 
                 animationTimer += gameTime.ElapsedGameTime.TotalSeconds;
                 if(animationTimer > 1 / (double)animationFramerate)
@@ -347,7 +362,7 @@ namespace Austen_sYetUntitledPlatformer
             }
 
             //wall sliding case
-            if (wallSliding && Velocity.Y > -100)//this only has one frame of animation so we can just do that one frame here
+            if (wallSliding && !grounded)//this only has one frame of animation so we can just do that one frame here
                 source = new Rectangle(0, 97, texturewidth, textureheight);
 
 

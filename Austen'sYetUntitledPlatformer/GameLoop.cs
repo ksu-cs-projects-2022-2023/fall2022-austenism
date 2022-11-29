@@ -8,6 +8,7 @@ using MonoGame.Extended.ViewportAdapters;
 using SharpDX.XAudio2;
 using Austen_sYetUntitledPlatformer.Collisions;
 using System.Collections.Generic;
+using Microsoft.Xna.Framework.Audio;
 
 namespace Austen_sYetUntitledPlatformer
 {
@@ -24,9 +25,13 @@ namespace Austen_sYetUntitledPlatformer
         private SpriteBatch _spriteBatch;
 
         private PlayerController player;
+        private Vector2 PlayerStartingPosition = new Vector2(2 * TILE_SIZE, 20 * TILE_SIZE);
+        private List<Enemy> enemies;
 
         private int[,] screenLayout;
         private List<Collisions.BoundingRectangle> levelCollision;
+
+        private SoundEffect YouDied;
 
         public GameLoop()
         {
@@ -43,7 +48,12 @@ namespace Austen_sYetUntitledPlatformer
 
         protected override void Initialize()
         {
-            player = new PlayerController(new Vector2(2 * TILE_SIZE, 20 * TILE_SIZE));
+            player = new PlayerController(PlayerStartingPosition);
+            
+            enemies = new List<Enemy>();
+            //so heres all the enemies in the level and where they will start at
+            enemies.Add(new NotGoomba(new Vector2(1152, 670)));
+
             base.Initialize();
         }
 
@@ -52,9 +62,14 @@ namespace Austen_sYetUntitledPlatformer
             _tiledMap = Content.Load<TiledMap>("FillerMap");
             _tiledMapRenderer = new TiledMapRenderer(GraphicsDevice, _tiledMap);
             _spriteBatch = new SpriteBatch(GraphicsDevice);
+            YouDied = Content.Load<SoundEffect>("hitHurt");
             
 
             player.LoadContent(Content);
+            foreach(Enemy enemy in enemies)
+            {
+                enemy.LoadContent(Content);
+            }
         }
 
         protected override void Update(GameTime gameTime)
@@ -64,7 +79,16 @@ namespace Austen_sYetUntitledPlatformer
 
             _tiledMapRenderer.Update(gameTime);
 
-            player.Update(gameTime, levelCollision);
+            //update the player, and if it returns false, that means the player hit an enemy and is dead
+            if(!player.Update(gameTime, levelCollision, enemies))
+            {
+                YouDied.Play();
+                player.Position = PlayerStartingPosition;
+            }
+            foreach (Enemy enemy in enemies)
+            {
+                enemy.Update(gameTime, levelCollision);
+            }
 
             base.Update(gameTime);
         }
@@ -81,6 +105,10 @@ namespace Austen_sYetUntitledPlatformer
             _spriteBatch.Begin();
 
             player.Draw(gameTime, _spriteBatch);
+            foreach (Enemy enemy in enemies)
+            {
+                enemy.Draw(gameTime, _spriteBatch);
+            }
 
             _spriteBatch.End();
 
@@ -124,7 +152,7 @@ namespace Austen_sYetUntitledPlatformer
                 for (int j = 0; j < GAME_WIDTH / TILE_SIZE; j++)
                 {//when theres something more than zero in the array, it needs collision
                     if (screenLayout[i,j] == 1)
-                        levelCollision.Add(new Collisions.BoundingRectangle(j * TILE_SIZE, i * TILE_SIZE, TILE_SIZE, TILE_SIZE));
+                        levelCollision.Add(new Collisions.BoundingRectangle(j * TILE_SIZE, i * TILE_SIZE, TILE_SIZE, TILE_SIZE, false));
                 }
             }
         }
