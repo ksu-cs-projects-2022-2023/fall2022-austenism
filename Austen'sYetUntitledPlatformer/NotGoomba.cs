@@ -16,7 +16,7 @@ namespace Austen_sYetUntitledPlatformer
     internal class NotGoomba : Enemy
     {
         Texture2D texture;
-        string texturepath = "NotGoomba";
+        string texturepath = "NotGoombaSpriteSheet";
         //these are the size of the texture file not whats on screen
         private int texturewidth = 64;
         private int textureheight = 64;
@@ -25,7 +25,7 @@ namespace Austen_sYetUntitledPlatformer
 
         private double animationTimer = 0;
         private short animationFrame = 0;
-        private short animationFramerate = 4;
+        private short animationFramerate = 3;
 
         private bool colliding = false;
         private bool collidingLeft = false;
@@ -65,7 +65,7 @@ namespace Austen_sYetUntitledPlatformer
         {
             texture = Content.Load<Texture2D>(texturepath);
         }
-        public override void Update(GameTime gameTime, List<Collisions.BoundingRectangle> levelCollision)
+        public override void Update(GameTime gameTime, List<Collisions.BoundingRectangle> levelCollision, List<Enemy> enemies)
         {
             //this is the section that every physics object needs to function. Handles collision and gravity and such
             #region Physics
@@ -115,6 +115,15 @@ namespace Austen_sYetUntitledPlatformer
                     collides.Add(b);
                 }
             }
+            foreach (Enemy e in enemies)
+            {
+                if(CollisionBox.CollidesWith(e.CollisionBox) && CollisionBox.X != e.CollisionBox.X && CollisionBox.Y != e.CollisionBox.Y)
+                {
+                    colliding = true;
+                    collides.Add(e.CollisionBox);
+                }
+            }
+
             //order them from closest to furthest
             //trust me ordering them helps a lot
             bool ordered = false;
@@ -210,7 +219,15 @@ namespace Austen_sYetUntitledPlatformer
             Rectangle source;
             source = new Rectangle(0, 0, texturewidth, textureheight);
 
-
+            animationTimer += gameTime.ElapsedGameTime.TotalSeconds;
+            if (animationTimer > 1 / (double)animationFramerate)
+            {
+                animationFrame += 1;
+                if (animationFrame == 2)
+                    animationFrame = 0;
+                animationTimer = 0;
+            }
+            source = new Rectangle(0 + (animationFrame * texturewidth), 0, texturewidth, textureheight);
             //finally, draw what the source rectangle has turned out to be
             spriteBatch.Draw(texture, Position, source, Color.White, 0, Vector2.Zero, Scale, SpriteEffects.None, 0);
         }

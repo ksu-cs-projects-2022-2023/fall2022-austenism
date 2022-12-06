@@ -35,7 +35,9 @@ namespace Austen_sYetUntitledPlatformer
 
         private KeyboardState previousState;
         private KeyboardState currentState;
+        
         private bool grounded = false;
+        float jumpTimer = 0;
 
 
 
@@ -52,10 +54,11 @@ namespace Austen_sYetUntitledPlatformer
         public Vector2 Acceleration;
 
         const float maxVerticalVelocity = 800;
-        const float maxHorizontalVelocity = 370;
+        const float maxHorizontalVelocity = 300;
         const float accelerationDueToGravity = 1000;
         const float frictionFactor = 16;
         const float movementSpeed = 8;
+        const float maxJumpTime = 0.3f;
 
         public PlayerController(Vector2 position)
         {
@@ -259,19 +262,22 @@ namespace Austen_sYetUntitledPlatformer
             }
             Velocity.X += speedDelta;
 
+            
+
             if (currentState.IsKeyDown(Keys.Space) && !previousState.IsKeyDown(Keys.Space))
             {//JUMPU
                 //jump from ground
                 if (grounded)
                 {
+                    jumpTimer = 0;
                     float extraHeight = 65 * Math.Abs(Velocity.X) / maxHorizontalVelocity;
                     if (Velocity.X < (-0.1 * maxHorizontalVelocity) || Math.Abs(Velocity.X) > (0.1 * maxHorizontalVelocity))
                         extraHeight += 25;
 
-                    Velocity += new Vector2(0, (-470 - extraHeight));
+                    Velocity += new Vector2(0, (-150 - extraHeight));
                 }
                 //here be wall jumping mechanics
-                if(currentState.IsKeyDown(Keys.A) && !grounded && collidingLeft)
+                if (currentState.IsKeyDown(Keys.A) && !grounded && collidingLeft)
                 {//wall jump off left wall
                     Velocity.Y = 0;
                     Velocity += new Vector2(400, -400);
@@ -281,6 +287,16 @@ namespace Austen_sYetUntitledPlatformer
                     Velocity.Y = 0;
                     Velocity += new Vector2(-400, -400);
                 }
+            }
+            if (currentState.IsKeyDown(Keys.Space) && previousState.IsKeyDown(Keys.Space) && jumpTimer < maxJumpTime)
+            {//if you are holding down space for a longer jump
+                jumpTimer += t;
+                Velocity.Y -= 5.4f * (1/(3 * jumpTimer));
+            }
+            if (!currentState.IsKeyDown(Keys.Space) && previousState.IsKeyDown(Keys.Space))
+            {//you have let go of the jump button after jumping so your jump has ended no more jump
+                jumpTimer = maxJumpTime;
+                Velocity.Y += 30;
             }
             //the other two less important ones
             if (currentState.IsKeyDown(Keys.W))
@@ -361,10 +377,23 @@ namespace Austen_sYetUntitledPlatformer
                 source = new Rectangle(0 + (animationFrame * texturewidth), 0, texturewidth, textureheight);
             }
 
+            if (!grounded && Math.Abs(Velocity.X) > 0)
+            {
+                animationTimer += gameTime.ElapsedGameTime.TotalSeconds;
+                if (animationTimer > 1 / (double)animationFramerate)
+                {
+                    animationFramerate = 8;
+                    animationFrame += 1;
+                    if (animationFrame == 4)
+                        animationFrame = 0;
+                    animationTimer = 0;
+                }
+                source = new Rectangle(0 + (animationFrame * texturewidth), 0, texturewidth, textureheight);
+            }
+
             //wall sliding case
             if (wallSliding && !grounded)//this only has one frame of animation so we can just do that one frame here
                 source = new Rectangle(0, 97, texturewidth, textureheight);
-
 
             //finally, draw what the source rectangle has turned out to be
             spriteBatch.Draw(texture, Position, source, Color.White, 0, Vector2.Zero, Scale, flipped, 0);

@@ -15,7 +15,7 @@ namespace Austen_sYetUntitledPlatformer
         public BoundingRectangle CollisionBox;
 
         public abstract void LoadContent(ContentManager Content);
-        public abstract void Update(GameTime gameTime, List<Collisions.BoundingRectangle> levelCollision);
+        public abstract void Update(GameTime gameTime, List<Collisions.BoundingRectangle> levelCollision, List<Enemy> enemies);
         public abstract void Draw(GameTime gameTime, SpriteBatch spriteBatch);
     }
 }

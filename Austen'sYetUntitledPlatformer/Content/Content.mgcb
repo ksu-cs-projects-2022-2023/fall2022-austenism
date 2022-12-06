@@ -14,17 +14,7 @@
 
 #---------------------------------- Content ---------------------------------#
 
-#begin FillerMap.tmx
-/importer:TiledMapImporter
-/processor:TiledMapProcessor
-/build:FillerMap.tmx
-
-#begin FillerTileset.tsx
-/importer:TiledMapTilesetImporter
-/processor:TiledMapTilesetProcessor
-/build:FillerTileset.tsx
-
-#begin FillerTilesheet.png
+#begin DungeonBricks.png
 /importer:TextureImporter
 /processor:TextureProcessor
 /processorParam:ColorKeyColor=255,0,255,255
@@ -34,7 +24,17 @@
 /processorParam:ResizeToPowerOfTwo=False
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
-/build:FillerTilesheet.png
+/build:DungeonBricks.png
+
+#begin DungeonMap.tmx
+/importer:TiledMapImporter
+/processor:TiledMapProcessor
+/build:DungeonMap.tmx
+
+#begin DungeonTileset.tsx
+/importer:TiledMapTilesetImporter
+/processor:TiledMapTilesetProcessor
+/build:DungeonTileset.tsx
 
 #begin hitHurt.wav
 /importer:WavImporter
@@ -42,7 +42,7 @@
 /processorParam:Quality=Best
 /build:hitHurt.wav
 
-#begin newsprite_filler.png
+#begin NotGoombaSpriteSheet.png
 /importer:TextureImporter
 /processor:TextureProcessor
 /processorParam:ColorKeyColor=255,0,255,255
@@ -52,19 +52,7 @@
 /processorParam:ResizeToPowerOfTwo=False
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
-/build:newsprite_filler.png
-
-#begin NotGoomba.png
-/importer:TextureImporter
-/processor:TextureProcessor
-/processorParam:ColorKeyColor=255,0,255,255
-/processorParam:ColorKeyEnabled=True
-/processorParam:GenerateMipmaps=False
-/processorParam:PremultiplyAlpha=True
-/processorParam:ResizeToPowerOfTwo=False
-/processorParam:MakeSquare=False
-/processorParam:TextureFormat=Color
-/build:NotGoomba.png
+/build:NotGoombaSpriteSheet.png
 
 #begin PlayerSpriteSheet.png
 /importer:TextureImporter
