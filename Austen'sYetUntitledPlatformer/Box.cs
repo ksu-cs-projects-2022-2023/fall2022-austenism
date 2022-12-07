@@ -2,8 +2,6 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
-using SharpDX.Direct2D1.Effects;
-using SharpDX.Direct3D9;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,20 +10,15 @@ using System.Threading.Tasks;
 
 namespace Austen_sYetUntitledPlatformer
 {
-
-    internal class NotGoomba : Enemy
+    internal class Box : Object
     {
         Texture2D texture;
-        string texturepath = "NotGoombaSpriteSheet";
+        string texturepath = "boxSprite";
         //these are the size of the texture file not whats on screen
-        private int texturewidth = 64;
-        private int textureheight = 64;
+        private int texturewidth = 32;
+        private int textureheight = 32;
         private int width;
         private int height;
-
-        private double animationTimer = 0;
-        private short animationFrame = 0;
-        private short animationFramerate = 3;
 
         private bool colliding = false;
         private bool collidingLeft = false;
@@ -34,38 +27,41 @@ namespace Austen_sYetUntitledPlatformer
 
         private bool grounded = false;
 
-        public Vector2 Position;
-        public Vector2 Velocity;
-        public Vector2 Acceleration;
+
         public static float Scale
         {
             get;
             private set;
-        } = (float)0.7;
+        } = (float)0.9;
 
         const float maxVerticalVelocity = 800;
         const float maxHorizontalVelocity = 370;
         const float accelerationDueToGravity = 1000;
         const float movementSpeed = 8;
 
+        //object specific things
+        
 
-        //heres some special stuff to this specific enemy
-        private bool movingRight = true;
-
-        public NotGoomba(Vector2 position)
+        public Box(Vector2 position)
         {
             Position = position;
+            StartingPosition = position;
             width = (int)(texturewidth * Scale);
             height = (int)(textureheight * Scale);
             CollisionBox = new BoundingRectangle(Position.X, Position.Y, height, width);
+            CollisionBox.IsObject = true;
             Velocity = Vector2.Zero;
             Acceleration = Vector2.Zero;
+            moveable = true;
+            OtherBoxes = new List<BoundingRectangle>();
         }
+
         public override void LoadContent(ContentManager Content)
         {
             texture = Content.Load<Texture2D>(texturepath);
         }
-        public override void Update(GameTime gameTime, List<Collisions.BoundingRectangle> levelCollision, List<Enemy> enemies, List<Object> objects)
+
+        public override void Update(GameTime gameTime, List<BoundingRectangle> levelCollision, List<Enemy> enemies, BoundingRectangle playerCollisionBox, List<Object> objects)
         {
             //this is the section that every physics object needs to function. Handles collision and gravity and such
             #region Physics
@@ -117,7 +113,7 @@ namespace Austen_sYetUntitledPlatformer
             }
             foreach (Enemy e in enemies)
             {
-                if(CollisionBox.CollidesWith(e.CollisionBox) && CollisionBox.X != e.CollisionBox.X && CollisionBox.Y != e.CollisionBox.Y)
+                if (CollisionBox.CollidesWith(e.CollisionBox) && CollisionBox.X != e.CollisionBox.X && CollisionBox.Y != e.CollisionBox.Y)
                 {
                     colliding = true;
                     collides.Add(e.CollisionBox);
@@ -125,7 +121,7 @@ namespace Austen_sYetUntitledPlatformer
             }
             foreach (Object o in objects)
             {
-                if (CollisionBox.CollidesWith(o.CollisionBox))
+                if (CollisionBox.CollidesWith(o.CollisionBox) && CollisionBox.X != o.CollisionBox.X && CollisionBox.Y != o.CollisionBox.Y && !o.CollisionBox.IsButton)
                 {
                     colliding = true;
                     collides.Add(o.CollisionBox);
@@ -137,6 +133,13 @@ namespace Austen_sYetUntitledPlatformer
                         colliding = true;
                         collides.Add(b);
                     }
+                }
+            }
+            if (moveable)
+            {
+                if (CollisionBox.CollidesWith(playerCollisionBox))
+                {
+                    collides.Add(playerCollisionBox);
                 }
             }
 
@@ -213,37 +216,12 @@ namespace Austen_sYetUntitledPlatformer
             }
             #endregion
 
-            //this is the region where the enemy gets its own movement and decides what it wants to do with its life
-            #region Movement
-            //hes a NotGoomba he lives a boring life
-            if (collidingRight && movingRight)
-                movingRight = false;
-            else if (collidingLeft && !movingRight)
-                movingRight = true;
-
-            if (movingRight)
-                Velocity.X = 10*movementSpeed;
-            else
-                Velocity.X = -10*movementSpeed;
-
-            #endregion
         }
-
         public override void Draw(GameTime gameTime, SpriteBatch spriteBatch)
         {
-            //for the texture lets default to the base standing, but this can be changed by the state
             Rectangle source;
             source = new Rectangle(0, 0, texturewidth, textureheight);
 
-            animationTimer += gameTime.ElapsedGameTime.TotalSeconds;
-            if (animationTimer > 1 / (double)animationFramerate)
-            {
-                animationFrame += 1;
-                if (animationFrame == 2)
-                    animationFrame = 0;
-                animationTimer = 0;
-            }
-            source = new Rectangle(0 + (animationFrame * texturewidth), 0, texturewidth, textureheight);
             //finally, draw what the source rectangle has turned out to be
             spriteBatch.Draw(texture, Position, source, Color.White, 0, Vector2.Zero, Scale, SpriteEffects.None, 0);
         }

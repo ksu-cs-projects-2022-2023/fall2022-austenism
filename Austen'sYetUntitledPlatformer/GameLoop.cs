@@ -3,12 +3,12 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using MonoGame.Extended.Tiled;
 using MonoGame.Extended.Tiled.Renderers;
-using MonoGame.Extended;
 using MonoGame.Extended.ViewportAdapters;
 using SharpDX.XAudio2;
 using Austen_sYetUntitledPlatformer.Collisions;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework.Audio;
+using Microsoft.Xna.Framework.Media;
 
 namespace Austen_sYetUntitledPlatformer
 {
@@ -27,11 +27,17 @@ namespace Austen_sYetUntitledPlatformer
         private PlayerController player;
         private Vector2 PlayerStartingPosition = new Vector2(2 * TILE_SIZE, 20 * TILE_SIZE);
         private List<Enemy> enemies;
+        private List<Object> objects;
 
         private int[,] screenLayout;
         private List<Collisions.BoundingRectangle> levelCollision;
 
         private SoundEffect YouDied;
+        private SoundEffect BackgroundMusic;
+        SoundEffectInstance MusicInstance;
+
+        //ExitDoor can be an Object, as long as that object has implemented the DrawDoor() function
+        private Object ExitDoor;
 
         public GameLoop()
         {
@@ -53,6 +59,29 @@ namespace Austen_sYetUntitledPlatformer
             enemies = new List<Enemy>();
             //so heres all the enemies in the level and where they will start at
             enemies.Add(new NotGoomba(new Vector2(1152, 670)));
+
+            objects = new List<Object>();
+
+            //heres all the other objects and where they will reside
+            objects.Add(new Box(new Vector2(7 * TILE_SIZE, 15f * TILE_SIZE)));
+
+
+            //this is a button so it will need some boxes to disappear, button needs to be first so it is drawn first
+            List<BoundingRectangle> otherboxes = new List<BoundingRectangle>();
+            otherboxes.Add(new BoundingRectangle(new Vector2(4 * TILE_SIZE, 14 * TILE_SIZE), 32, 32));
+                otherboxes.Add(new BoundingRectangle(new Vector2(5 * TILE_SIZE, 15 * TILE_SIZE), 32, 32));
+                    otherboxes.Add(new BoundingRectangle(new Vector2(6 * TILE_SIZE, 16 * TILE_SIZE), 32, 32));
+                    otherboxes.Add(new BoundingRectangle(new Vector2(7 * TILE_SIZE, 16 * TILE_SIZE), 32, 32));
+                    otherboxes.Add(new BoundingRectangle(new Vector2(8 * TILE_SIZE, 16 * TILE_SIZE), 32, 32));
+                otherboxes.Add(new BoundingRectangle(new Vector2(9 * TILE_SIZE, 15 * TILE_SIZE), 32, 32));
+            otherboxes.Add(new BoundingRectangle(new Vector2(10 * TILE_SIZE, 14 * TILE_SIZE), 32, 32));
+
+            Button button = new Button(new Vector2(21 * TILE_SIZE, 10 * TILE_SIZE), otherboxes, true);
+            button.DoorPosition = new Vector2(14 * TILE_SIZE, 20 * TILE_SIZE);
+            ExitDoor = button;
+            objects.Add(button);
+
+
             base.Initialize();
         }
 
@@ -62,12 +91,20 @@ namespace Austen_sYetUntitledPlatformer
             _tiledMapRenderer = new TiledMapRenderer(GraphicsDevice, _tiledMap);
             _spriteBatch = new SpriteBatch(GraphicsDevice);
             YouDied = Content.Load<SoundEffect>("hitHurt");
+            BackgroundMusic = Content.Load<SoundEffect>("DungeonTheme");
+            MusicInstance = BackgroundMusic.CreateInstance();
+            MusicInstance.IsLooped = true;
+            MusicInstance.Play();
             
 
             player.LoadContent(Content);
             foreach(Enemy enemy in enemies)
             {
                 enemy.LoadContent(Content);
+            }
+            foreach(Object o in objects)
+            {
+                o.LoadContent(Content);
             }
         }
 
@@ -79,16 +116,23 @@ namespace Austen_sYetUntitledPlatformer
             _tiledMapRenderer.Update(gameTime);
 
             //update the player, and if it returns false, that means the player hit an enemy and is dead
-            if(!player.Update(gameTime, levelCollision, enemies))
+            if(!player.Update(gameTime, levelCollision, enemies, objects))
             {
                 YouDied.Play();
                 player.Position = PlayerStartingPosition;
+                foreach(Object o in objects)
+                {
+                    o.Position = o.StartingPosition;
+                }
+            }
+            foreach (Object o in objects)
+            {
+                o.Update(gameTime, levelCollision, enemies, player.PlayerCollisionBox, objects);
             }
             foreach (Enemy enemy in enemies)
             {
-                enemy.Update(gameTime, levelCollision, enemies);
+                enemy.Update(gameTime, levelCollision, enemies, objects);
             }
-
             base.Update(gameTime);
         }
 
@@ -102,12 +146,20 @@ namespace Austen_sYetUntitledPlatformer
 
             _tiledMapRenderer.Draw();
             _spriteBatch.Begin();
+            //this door shall be drawn before all else (other than tilemap)
+            ExitDoor.DrawDoor(gameTime, _spriteBatch);
 
-            player.Draw(gameTime, _spriteBatch);
             foreach (Enemy enemy in enemies)
             {
                 enemy.Draw(gameTime, _spriteBatch);
             }
+            foreach (Object o in objects)
+            {
+                o.Draw(gameTime, _spriteBatch);
+            }
+
+
+            player.Draw(gameTime, _spriteBatch);
 
             _spriteBatch.End();
 
@@ -151,7 +203,7 @@ namespace Austen_sYetUntitledPlatformer
                 for (int j = 0; j < GAME_WIDTH / TILE_SIZE; j++)
                 {//when theres something more than zero in the array, it needs collision
                     if (screenLayout[i,j] == 1)
-                        levelCollision.Add(new Collisions.BoundingRectangle(j * TILE_SIZE, i * TILE_SIZE, TILE_SIZE, TILE_SIZE, false));
+                        levelCollision.Add(new Collisions.BoundingRectangle(j * TILE_SIZE, i * TILE_SIZE, TILE_SIZE, TILE_SIZE));
                 }
             }
         }

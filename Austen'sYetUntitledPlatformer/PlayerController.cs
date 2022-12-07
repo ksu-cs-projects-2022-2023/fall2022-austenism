@@ -1,5 +1,6 @@
 ﻿using Austen_sYetUntitledPlatformer.Collisions;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -39,7 +40,9 @@ namespace Austen_sYetUntitledPlatformer
         private bool grounded = false;
         float jumpTimer = 0;
 
-
+        //SOUND EFFECTS*******************
+        List<SoundEffect> soundEffects;
+        SoundEffectInstance jumpInstance;
 
         public static float Scale
         {
@@ -65,17 +68,29 @@ namespace Austen_sYetUntitledPlatformer
             Position = position;
             width = (int)(texturewidth * Scale);
             height = (int)(textureheight * Scale);
-            PlayerCollisionBox = new BoundingRectangle(Position.X, Position.Y, height, width, false);
+            PlayerCollisionBox = new BoundingRectangle(Position.X, Position.Y, height, width);
             Velocity = Vector2.Zero;
             Acceleration = Vector2.Zero;
             //origin = new Vector2(width / 2, height);
             currentState = Keyboard.GetState();
+            soundEffects = new List<SoundEffect>();
         }
         public void LoadContent(ContentManager Content)
         {
             texture = Content.Load<Texture2D>(texturepath);
+
+            //sound effects
+            SoundEffect.MasterVolume = 0.8f;
+
+            soundEffects.Add(Content.Load<SoundEffect>("jump"));     //[0]
+            soundEffects.Add(Content.Load<SoundEffect>("wallJump")); //[1]
+            soundEffects.Add(Content.Load<SoundEffect>("footstep")); //[2]
+
+            jumpInstance = soundEffects[0].CreateInstance();//make an instance of this one so it can be cancelled
+            jumpInstance.Volume = 0.5f;
+
         }
-        public bool Update(GameTime gameTime, List<Collisions.BoundingRectangle> levelCollision, List<Enemy> enemies)
+        public bool Update(GameTime gameTime, List<Collisions.BoundingRectangle> levelCollision, List<Enemy> enemies, List<Object> objects)
         {
             //before anything lets reset all the sprite checker deals so we know what sprite to use when we get to Draw()
             wallSliding = false;
@@ -132,6 +147,22 @@ namespace Austen_sYetUntitledPlatformer
                     collides.Add(b);
                 }
             }
+            foreach(Object o in objects)
+            {
+                if (PlayerCollisionBox.CollidesWith(o.CollisionBox))
+                {
+                    colliding = true;
+                    collides.Add(o.CollisionBox);
+                }
+                foreach(BoundingRectangle b in o.OtherBoxes)
+                {
+                    if (PlayerCollisionBox.CollidesWith(b) && b.Activated)
+                    {
+                        colliding = true;
+                        collides.Add(b);
+                    }
+                }
+            }
             //order them from closest to furthest
             //trust me ordering them helps a lot
             bool ordered = false;
@@ -166,37 +197,54 @@ namespace Austen_sYetUntitledPlatformer
                         Math.Abs(overlapTop) < Math.Abs(overlapLeft) &&
                         Math.Abs(overlapTop) < Math.Abs(overlapRight))
                     {
-                        Position.Y += overlapTop;
-                        Velocity.Y = 0;
+                        if (!b.IsButton)
+                        {
+                            Position.Y += overlapTop;
+                            Velocity.Y = 0;
+                        }
+                        
                     }
                     else if (Math.Abs(overlapBottom) < Math.Abs(overlapLeft) &&  //if bottom is the smallest
                              Math.Abs(overlapBottom) < Math.Abs(overlapRight) &&
                              Math.Abs(overlapBottom) < Math.Abs(overlapTop)) 
                     {//if bottom is smallest we gotta make sure we are not grounded to do normal collision with floor
+                        if (!b.IsButton)
+                        {
+                            Position.Y += overlapBottom;
+                            Velocity.Y = 0;
+                            grounded = true;
+                        }
                         
-                        Position.Y += overlapBottom;
-                        Velocity.Y = 0;
-                        grounded = true;
                     }
                     else if (Math.Abs(overlapLeft) < Math.Abs(overlapRight) && //if left is smallest
                              Math.Abs(overlapLeft) < Math.Abs(overlapTop) &&
                              Math.Abs(overlapLeft) < Math.Abs(overlapBottom))
                     {
-                        Position.X += overlapLeft;
-                        if (Velocity.X < 0)
+                        if (!b.IsObject && !b.IsButton)
                         {
-                            Velocity.X = 0;
+                            Position.X += overlapLeft;
+                            if (Velocity.X < 0)
+                            {
+                                Velocity.X = 0;
+                            }
+                        }
+                        else
+                        {
+
                         }
                         collidingLeft = true;
                     }
                     else//if right is the smallest
                     {
-                        Position.X += overlapRight;
-                        if(Velocity.X > 0)
+                        if (!b.IsObject && !b.IsButton)
                         {
-                            Velocity.X = 0;
+                            Position.X += overlapRight;
+                            if (Velocity.X > 0)
+                            {
+                                Velocity.X = 0;
+                            }
+                            collidingRight = true;
                         }
-                        collidingRight = true;
                     }
 
 
@@ -211,7 +259,6 @@ namespace Austen_sYetUntitledPlatformer
             //lets take input next
             previousState = currentState;
             currentState = Keyboard.GetState();
-
 
             //The big three important ones
             float speedDelta = 0;
@@ -275,17 +322,20 @@ namespace Austen_sYetUntitledPlatformer
                         extraHeight += 25;
 
                     Velocity += new Vector2(0, (-150 - extraHeight));
+                    jumpInstance.Play();
                 }
                 //here be wall jumping mechanics
                 if (currentState.IsKeyDown(Keys.A) && !grounded && collidingLeft)
                 {//wall jump off left wall
                     Velocity.Y = 0;
                     Velocity += new Vector2(400, -400);
+                    soundEffects[1].Play();
                 }
                 if (currentState.IsKeyDown(Keys.D) && !grounded && collidingRight)
                 {//wall jump off right wall
                     Velocity.Y = 0;
                     Velocity += new Vector2(-400, -400);
+                    soundEffects[1].Play();
                 }
             }
             if (currentState.IsKeyDown(Keys.Space) && previousState.IsKeyDown(Keys.Space) && jumpTimer < maxJumpTime)
@@ -297,6 +347,7 @@ namespace Austen_sYetUntitledPlatformer
             {//you have let go of the jump button after jumping so your jump has ended no more jump
                 jumpTimer = maxJumpTime;
                 Velocity.Y += 30;
+                jumpInstance.Stop();
             }
             //the other two less important ones
             if (currentState.IsKeyDown(Keys.W))
@@ -373,6 +424,10 @@ namespace Austen_sYetUntitledPlatformer
                     if (animationFrame == 4)
                         animationFrame = 0;
                     animationTimer = 0;
+                    if(animationFrame == 1 || animationFrame == 3)
+                    {
+                        //soundEffects[2].Play();//footsteps line up with the frames
+                    }
                 }
                 source = new Rectangle(0 + (animationFrame * texturewidth), 0, texturewidth, textureheight);
             }
