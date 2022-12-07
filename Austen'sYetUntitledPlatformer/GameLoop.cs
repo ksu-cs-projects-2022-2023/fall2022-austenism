@@ -9,6 +9,7 @@ using Austen_sYetUntitledPlatformer.Collisions;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Media;
+using System.Text;
 
 namespace Austen_sYetUntitledPlatformer
 {
@@ -28,6 +29,7 @@ namespace Austen_sYetUntitledPlatformer
         private Vector2 PlayerStartingPosition = new Vector2(2 * TILE_SIZE, 20 * TILE_SIZE);
         private List<Enemy> enemies;
         private List<Object> objects;
+        private Button button;
 
         private int[,] screenLayout;
         private List<Collisions.BoundingRectangle> levelCollision;
@@ -76,7 +78,7 @@ namespace Austen_sYetUntitledPlatformer
                 otherboxes.Add(new BoundingRectangle(new Vector2(9 * TILE_SIZE, 15 * TILE_SIZE), 32, 32));
             otherboxes.Add(new BoundingRectangle(new Vector2(10 * TILE_SIZE, 14 * TILE_SIZE), 32, 32));
 
-            Button button = new Button(new Vector2(21 * TILE_SIZE, 10 * TILE_SIZE), otherboxes, true);
+            button = new Button(new Vector2(21 * TILE_SIZE, 10 * TILE_SIZE), otherboxes, true);
             button.DoorPosition = new Vector2(14 * TILE_SIZE, 20 * TILE_SIZE);
             ExitDoor = button;
             objects.Add(button);
@@ -124,6 +126,7 @@ namespace Austen_sYetUntitledPlatformer
                 {
                     o.Position = o.StartingPosition;
                 }
+                button.pressed = false;
             }
             foreach (Object o in objects)
             {

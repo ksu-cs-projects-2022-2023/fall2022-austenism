@@ -53,7 +53,7 @@ namespace Austen_sYetUntitledPlatformer
         private List<BoundingRectangle> collides = new List<BoundingRectangle>();
 
         //here are some Button specific things
-        private bool pressed = false;
+        public bool pressed = false;
         private double unpressTimer = 0.0;
         private const double unpressWaitTime = 0.3;
 
