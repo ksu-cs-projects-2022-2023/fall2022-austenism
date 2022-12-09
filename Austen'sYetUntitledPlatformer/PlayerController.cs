@@ -36,6 +36,7 @@ namespace Austen_sYetUntitledPlatformer
 
         private KeyboardState previousState;
         private KeyboardState currentState;
+        public bool PressingW = false;
         
         private bool grounded = false;
         float jumpTimer = 0;
@@ -139,6 +140,7 @@ namespace Austen_sYetUntitledPlatformer
             }
 
             collides = new List<BoundingRectangle>();
+            //check for level collision
             foreach(BoundingRectangle b in levelCollision)
             {
                 if (PlayerCollisionBox.CollidesWith(b))
@@ -147,12 +149,18 @@ namespace Austen_sYetUntitledPlatformer
                     collides.Add(b);
                 }
             }
+            //check for objects and any other hitboxes tied to them
+            List<Object> toMove = new List<Object>();
             foreach(Object o in objects)
             {
                 if (PlayerCollisionBox.CollidesWith(o.CollisionBox))
                 {
                     colliding = true;
                     collides.Add(o.CollisionBox);
+                    if (o.moveable)
+                    {
+                        toMove.Add(o);
+                    }
                 }
                 foreach(BoundingRectangle b in o.OtherBoxes)
                 {
@@ -220,30 +228,59 @@ namespace Austen_sYetUntitledPlatformer
                              Math.Abs(overlapLeft) < Math.Abs(overlapTop) &&
                              Math.Abs(overlapLeft) < Math.Abs(overlapBottom))
                     {
-                        if (!b.IsObject && !b.IsButton)
+                        if (!b.IsButton)
                         {
-                            Position.X += overlapLeft;
-                            if (Velocity.X < 0)
-                            {
-                                Velocity.X = 0;
+                            if (b.IsObject)
+                            {//moveable box physics
+                                foreach (Object o in toMove)
+                                {
+                                    if (o.CollisionBox.X == b.X && o.CollisionBox.Y == b.Y)
+                                    {
+                                        o.Push(gameTime, Velocity.X); //push left
+                                        Position.X += overlapLeft;
+                                        Velocity.X = o.Velocity.X;
+                                        collidingRight = true;
+                                    }
+                                }
                             }
-                        }
-                        else
-                        {
-
+                            else
+                            {
+                                Position.X += overlapLeft;
+                                if (Velocity.X < 0)
+                                {
+                                    Velocity.X = 0;
+                                }
+                            }
                         }
                         collidingLeft = true;
                     }
                     else//if right is the smallest
                     {
-                        if (!b.IsObject && !b.IsButton)
+                        if (!b.IsButton)
                         {
-                            Position.X += overlapRight;
-                            if (Velocity.X > 0)
-                            {
-                                Velocity.X = 0;
+                            //check if this box is a moveable Object and do so if it is
+                            if (b.IsObject)
+                            {//moveable box physics
+                                foreach (Object o in toMove)
+                                {
+                                    if (o.CollisionBox.X == b.X && o.CollisionBox.Y == b.Y)
+                                    {
+                                        o.Push(gameTime, Velocity.X); //push right
+                                        Position.X += overlapRight;
+                                        Velocity.X = o.Velocity.X;
+                                        collidingRight = true;
+                                    }
+                                }
                             }
-                            collidingRight = true;
+                            else
+                            { //normal physics
+                                Position.X += overlapRight;
+                                if (Velocity.X > 0)
+                                {
+                                    Velocity.X = 0;
+                                }
+                                collidingRight = true;
+                            }
                         }
                     }
 
@@ -254,6 +291,7 @@ namespace Austen_sYetUntitledPlatformer
                     PlayerCollisionBox.Y = Position.Y;
                 }
             }
+            
 
 
             //lets take input next
@@ -352,7 +390,11 @@ namespace Austen_sYetUntitledPlatformer
             //the other two less important ones
             if (currentState.IsKeyDown(Keys.W))
             { //maybe look up?
-
+                PressingW = true;
+            }
+            else
+            {
+                PressingW = false;
             }
             if (currentState.IsKeyDown(Keys.S))
             {//squat
@@ -386,19 +428,6 @@ namespace Austen_sYetUntitledPlatformer
         }
         public void Draw(GameTime gameTime, SpriteBatch spriteBatch)
         {
-            //update animation timer
-            //animationTimer += gameTime.ElapsedGameTime.TotalSeconds;
-
-            //lets get the animation source rectangle
-            
-
-            //if (colliding) //THIS IS FOR DEBUGGING COLLISION
-            //{
-            //    spriteBatch.Draw(texture, Position, source, Color.Red, 0, Vector2.Zero, Scale, SpriteEffects.None, 0);
-            //    foreach (BoundingRectangle b in collides)
-            //        spriteBatch.Draw(texture, new Vector2(b.X, b.Y), source, Color.Red, 0, Vector2.Zero, Scale, SpriteEffects.None, 0);
-            //}
-            //else
             SpriteEffects flipped = SpriteEffects.None;
             if (!facingRight)
             {

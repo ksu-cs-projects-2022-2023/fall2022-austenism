@@ -38,6 +38,8 @@ namespace Austen_sYetUntitledPlatformer
         const float maxHorizontalVelocity = 370;
         const float accelerationDueToGravity = 1000;
         const float movementSpeed = 8;
+        const float frictionFactor = 1000;
+        const float pushFactor = 10000;
 
         //object specific things
         
@@ -216,6 +218,17 @@ namespace Austen_sYetUntitledPlatformer
             }
             #endregion
 
+
+            //heres a moveable object specific thing
+            if (grounded)
+            {
+                if (Velocity.X < 0)
+                    Velocity.X += frictionFactor * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                if (Velocity.X > 0)
+                    Velocity.X -= frictionFactor * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                if (Velocity.X < (frictionFactor * gameTime.ElapsedGameTime.TotalSeconds) && Velocity.X > (-frictionFactor * gameTime.ElapsedGameTime.TotalSeconds))//its somewhere in the middle so just make it zero
+                    Velocity.X = 0;
+            }
         }
         public override void Draw(GameTime gameTime, SpriteBatch spriteBatch)
         {
@@ -224,6 +237,11 @@ namespace Austen_sYetUntitledPlatformer
 
             //finally, draw what the source rectangle has turned out to be
             spriteBatch.Draw(texture, Position, source, Color.White, 0, Vector2.Zero, Scale, SpriteEffects.None, 0);
+        }
+
+        public override void Push(GameTime gameTime, float XAxis)
+        {
+            Velocity.X = XAxis;
         }
     }
 }

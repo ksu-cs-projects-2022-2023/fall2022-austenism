@@ -14,7 +14,7 @@ namespace Austen_sYetUntitledPlatformer
     {
         public BoundingRectangle CollisionBox;
         public List<BoundingRectangle> OtherBoxes;
-        public bool moveable;
+        public bool moveable { get; set; } = false;
         public Vector2 StartingPosition { get; set; }
 
         public Vector2 Position;
@@ -25,7 +25,7 @@ namespace Austen_sYetUntitledPlatformer
         public abstract void Update(GameTime gameTime, List<Collisions.BoundingRectangle> levelCollision, List<Enemy> enemies, BoundingRectangle playerCollisionBox, List<Object> objects);
         public abstract void Draw(GameTime gameTime, SpriteBatch spriteBatch);
 
-        public virtual void DrawDoor(GameTime gameTime, SpriteBatch spriteBatch)
+        public virtual void Push(GameTime gameTime, float XAxis)
         {
             throw new NotImplementedException();
         }

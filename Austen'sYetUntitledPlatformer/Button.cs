@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace Austen_sYetUntitledPlatformer
 {
-    internal class Button : Object
+    internal class Button : Object, IDoor
     {
         Texture2D texture;
         string texturepath = "Button";
@@ -40,6 +40,8 @@ namespace Austen_sYetUntitledPlatformer
         private int doorwidth;
         private int doorheight;
         public Vector2 DoorPosition;
+        public BoundingRectangle DoorCollisionBox { get; set; }
+        public bool Open { get; set; } = false;
 
         public static float Scale
         {
@@ -79,6 +81,7 @@ namespace Austen_sYetUntitledPlatformer
             HasDoor = hasDoor;
 
             soundEffects = new List<SoundEffect>();
+
         }
 
         public override void LoadContent(ContentManager Content)
@@ -88,6 +91,11 @@ namespace Austen_sYetUntitledPlatformer
             doorTexture = Content.Load <Texture2D>(doorTexturePath);
 
             soundEffects.Add(Content.Load<SoundEffect>("buttonPressed")); //[0]
+
+            if (HasDoor)
+            {
+                DoorCollisionBox = new BoundingRectangle(DoorPosition, 64, 32);
+            }
         }
 
         public override void Update(GameTime gameTime, List<BoundingRectangle> levelCollision, List<Enemy> enemies, BoundingRectangle playerCollisionBox, List<Object> objects)
@@ -102,6 +110,7 @@ namespace Austen_sYetUntitledPlatformer
             }
             if (!pressed)
             {
+                Open = false;
                 foreach (BoundingRectangle b in OtherBoxes)
                 {
                     b.Activated = true;
@@ -146,6 +155,7 @@ namespace Austen_sYetUntitledPlatformer
             //well lets update whatever is tied to the button
             if (pressed)
             {
+                Open = true;
                 foreach(BoundingRectangle b in OtherBoxes)
                 {
                     b.Activated = false;
@@ -187,11 +197,10 @@ namespace Austen_sYetUntitledPlatformer
         /// </summary>
         /// <param name="gameTime"></param>
         /// <param name="spriteBatch"></param>
-        public override void DrawDoor(GameTime gameTime, SpriteBatch spriteBatch)
+        public void DrawDoor(GameTime gameTime, SpriteBatch spriteBatch)
         {
             Rectangle doorSource;
             doorSource = new Rectangle(0 * doortexturewidth, 0, doortexturewidth, doortextureheight);
-
 
             if (pressed)
             {//is pressed so lets use the pressed sprites
