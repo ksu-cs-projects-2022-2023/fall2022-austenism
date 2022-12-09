@@ -25,6 +25,9 @@ namespace Austen_sYetUntitledPlatformer.GameLoops
         private int animationFrame = 0;
         private double animationTimer = 0.0;
 
+        Texture2D NotGoombaTexture;
+        List<Vector2> NotGoombaLocations;
+
         public MainMenuLoop(ContentManager content, GraphicsDevice graphicsDevice)
         {
             Content = content;
@@ -33,7 +36,13 @@ namespace Austen_sYetUntitledPlatformer.GameLoops
 
         public override void Initialize()
         {
-
+            NotGoombaLocations = new List<Vector2>();
+            NotGoombaLocations.Add(new Vector2(1050, -128));
+            NotGoombaLocations.Add(new Vector2(1050, 21));
+            NotGoombaLocations.Add(new Vector2(1050, 170));
+            NotGoombaLocations.Add(new Vector2(1050, 319));
+            NotGoombaLocations.Add(new Vector2(1050, 468));
+            NotGoombaLocations.Add(new Vector2(1050, 617));
         }
         public override void LoadContent()
         {
@@ -42,9 +51,18 @@ namespace Austen_sYetUntitledPlatformer.GameLoops
 
             playerTexture = Content.Load<Texture2D>("PlayerSpriteSheet");
             startButtonTexture = Content.Load<Texture2D>("StartButton");
+            NotGoombaTexture = Content.Load<Texture2D>("NotGoombaSpriteSheet");
         }
         public override int Update(GameTime gameTime)
         {
+            //move the NotGoombas
+            for(int i = 0; i < NotGoombaLocations.Count; i++)
+            {
+                NotGoombaLocations[i] = NotGoombaLocations[i] + new Vector2(0, 1);
+                if (NotGoombaLocations[i].Y >= 768)
+                    NotGoombaLocations[i] = new Vector2(NotGoombaLocations[i].X, -128);
+            }
+
             HoveringOverStart = false;
             MouseState state = Mouse.GetState();
 
@@ -88,6 +106,11 @@ namespace Austen_sYetUntitledPlatformer.GameLoops
             _spriteBatch.DrawString(_spriteFont, "Start", new Vector2(685, 364), Color.Black);
 
             _spriteBatch.Draw(playerTexture, new Vector2(150, 350), source, Color.White, 0f, Vector2.Zero, 2.5f, SpriteEffects.None, 0);
+
+            foreach(Vector2 position in NotGoombaLocations)
+            {
+                _spriteBatch.Draw(NotGoombaTexture, position, new Rectangle(0, 0, 64, 64), Color.White, 0f, Vector2.Zero, 2f, SpriteEffects.None, 0);
+            }
 
             _spriteBatch.End();
         }
