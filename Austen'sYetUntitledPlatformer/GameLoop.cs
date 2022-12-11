@@ -24,6 +24,7 @@ namespace Austen_sYetUntitledPlatformer
         LevelLoop currentLevel;
         short currentLevelIndex;
         MainMenuLoop mainMenu;
+        TutorialLevelLoop tutorialLevel;
         DungeonLevelLoop dungeonLevel;
 
         List<LevelLoop> levels;
@@ -43,11 +44,15 @@ namespace Austen_sYetUntitledPlatformer
         {
             mainMenu = new MainMenuLoop(Content, GraphicsDevice);
             mainMenu.Initialize();
+            tutorialLevel = new TutorialLevelLoop(Content, GraphicsDevice);
+            tutorialLevel.Initialize();
             dungeonLevel = new DungeonLevelLoop(Content, GraphicsDevice);
             dungeonLevel.Initialize();
 
+
             levels = new List<LevelLoop>();
             levels.Add(mainMenu);
+            levels.Add(tutorialLevel);
             levels.Add(dungeonLevel);
 
             currentLevel = mainMenu;
@@ -58,6 +63,7 @@ namespace Austen_sYetUntitledPlatformer
         protected override void LoadContent()
         {
             mainMenu.LoadContent();
+            tutorialLevel.LoadContent();
             dungeonLevel.LoadContent();
         }
 

@@ -157,6 +157,11 @@
 /processorParam:TextureFormat=Color
 /build:StartButton.png
 
+#begin TutorialLevel.tmx
+/importer:TiledMapImporter
+/processor:TiledMapProcessor
+/build:TutorialLevel.tmx
+
 #begin wallJump.wav
 /importer:WavImporter
 /processor:SoundEffectProcessor
